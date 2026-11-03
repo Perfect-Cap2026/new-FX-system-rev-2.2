@@ -1,0 +1,5 @@
+line-length = 120
+[lint]
+select = ["E", "F", "B"]
+# B008: FastAPI's Depends()/Query() defaults are idiomatic. E741: `l` = low price. B905: equal-length zips by construction.
+ignore = ["E501", "B008", "E741", "B905"]

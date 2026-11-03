@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body { background: #14232F; color: #ECE7DA; }
+body { font-feature-settings: "tnum" 1, "ss01" 1; -webkit-font-smoothing: antialiased; }
+.num { font-variant-numeric: tabular-nums; }
+:focus-visible { outline: 2px solid #CFA85A; outline-offset: 2px; border-radius: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+.strip-in { animation: strip 700ms cubic-bezier(.2,.7,.2,1) both; }
+@keyframes strip { from { transform: scaleX(0); } to { transform: scaleX(1); } }

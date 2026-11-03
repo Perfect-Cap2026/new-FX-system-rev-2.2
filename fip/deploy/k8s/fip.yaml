@@ -1,0 +1,72 @@
+# Starter manifests for EKS. Postgres/Redis are expected as managed services (RDS, ElastiCache);
+# secrets come from AWS Secrets Manager via External Secrets into `fip-secrets`.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: fip-api }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: fip-api } }
+  template:
+    metadata: { labels: { app: fip-api }, annotations: { prometheus.io/scrape: "true", prometheus.io/port: "8000" } }
+    spec:
+      securityContext: { runAsNonRoot: true }
+      containers:
+        - name: api
+          image: ACCOUNT.dkr.ecr.REGION.amazonaws.com/fip-api:TAG
+          ports: [{ containerPort: 8000 }]
+          envFrom: [{ secretRef: { name: fip-secrets } }]
+          env: [{ name: ENV, value: production }]
+          readinessProbe: { httpGet: { path: /health, port: 8000 }, periodSeconds: 10 }
+          livenessProbe: { httpGet: { path: /health, port: 8000 }, periodSeconds: 30 }
+          resources: { requests: { cpu: 250m, memory: 512Mi }, limits: { cpu: "1", memory: 1Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: fip-api }
+spec: { selector: { app: fip-api }, ports: [{ port: 8000 }] }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: fip-api }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: fip-api }
+  minReplicas: 2
+  maxReplicas: 8
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 65 } } }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: fip-web }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: fip-web } }
+  template:
+    metadata: { labels: { app: fip-web } }
+    spec:
+      securityContext: { runAsNonRoot: true }
+      containers:
+        - name: web
+          image: ACCOUNT.dkr.ecr.REGION.amazonaws.com/fip-web:TAG
+          ports: [{ containerPort: 3000 }]
+          env: [{ name: API_URL, value: "http://fip-api:8000" }]
+          resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { cpu: 500m, memory: 512Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: fip-web }
+spec: { selector: { app: fip-web }, ports: [{ port: 3000 }] }
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fip
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: ACM_CERT_ARN
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - { path: /, pathType: Prefix, backend: { service: { name: fip-web, port: { number: 3000 } } } }

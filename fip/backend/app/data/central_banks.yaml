@@ -1,0 +1,19 @@
+# Central-bank policy table used by the macro engine for FX differentials.
+# USD is overwritten live from FRED (DFF). Others are maintained here until the
+# Phase-1 ingest worker automates them. VERIFY against official sources and update after each meeting.
+# bias: one of hiking | hawkish hold | hold | dovish hold | cutting
+# inflation: latest headline YoY % (optional; enables the real-rate differential signal)
+as_of: "2026-10-31"
+sources:
+  - https://www.investing.com/central-banks/
+  - https://forexuro.com/central-banks
+banks:
+  USD: {bank: Federal Reserve,  rate: 4.00, bias: hawkish hold, inflation: null, note: "3.75-4.00% range; held 28 Oct, 2 dissents for a hike"}
+  EUR: {bank: ECB,              rate: 2.50, bias: hawkish hold, inflation: null, note: "deposit facility; held 29 Oct after Sep hike"}
+  GBP: {bank: Bank of England,  rate: 3.75, bias: hawkish hold, inflation: null, note: "held 17 Sep, 3 votes for a hike"}
+  JPY: {bank: Bank of Japan,    rate: 1.25, bias: hiking,       inflation: null, note: "held 30 Oct after Sep hike"}
+  CHF: {bank: SNB,              rate: 0.00, bias: hold,         inflation: null}
+  AUD: {bank: RBA,              rate: 4.60, bias: hiking,       inflation: null, note: "decision due 3 Nov 2026 - update"}
+  CAD: {bank: Bank of Canada,   rate: 2.50, bias: hiking,       inflation: null, note: "hiked 25bp 28 Oct"}
+  NZD: {bank: RBNZ,             rate: 2.75, bias: hawkish hold, inflation: null, note: "held 28 Oct after Sep hike"}
+  CNY: {bank: PBoC,             rate: 3.00, bias: hold,         inflation: null, note: "1Y LPR"}

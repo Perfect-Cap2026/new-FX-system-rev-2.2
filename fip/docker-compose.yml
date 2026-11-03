@@ -1,0 +1,38 @@
+# Local stack: PostgreSQL + Redis + FastAPI + Next.js
+#   cp .env.example .env   (add keys if you have them)
+#   docker compose up --build   → http://localhost:3000
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: fip
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fip-local-only}
+      POSTGRES_DB: fip
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U fip"], interval: 5s, retries: 10 }
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+
+  api:
+    build: ./backend
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://fip:${POSTGRES_PASSWORD:-fip-local-only}@db:5432/fip
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:3000
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    ports: ["127.0.0.1:8000:8000"]   # bound to localhost only; the web app proxies to it
+
+  web:
+    build: ./frontend
+    environment:
+      API_URL: http://api:8000
+    depends_on: [api]
+    ports: ["127.0.0.1:3000:3000"]
+
+volumes:
+  pgdata:
